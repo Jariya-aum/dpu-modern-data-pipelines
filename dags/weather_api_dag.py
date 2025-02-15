@@ -15,7 +15,11 @@ DAG_FOLDER = "/opt/airflow/dags"
 
 
 def _get_weather_data():
+<<<<<<< HEAD
     # assert 1 == 2
+=======
+    assert 1 == 2
+>>>>>>> f0553bfd71cbabefb06694c36aa41b6dc1787866
 
     # API_KEY = os.environ.get("WEATHER_API_KEY")
     API_KEY = Variable.get("weather_api_key")
@@ -42,6 +46,7 @@ def _validate_data():
 
     assert data.get("main") is not None
 
+<<<<<<< HEAD
 
 
 def _validate_temperature_range():
@@ -52,6 +57,8 @@ def _validate_temperature_range():
     
 
 
+=======
+>>>>>>> f0553bfd71cbabefb06694c36aa41b6dc1787866
 def _create_weather_table():
     pg_hook = PostgresHook(
         postgres_conn_id="weather_postgres_conn",
@@ -113,6 +120,21 @@ with DAG(
         python_callable=_validate_temperature_range,
     )
 
+
+    validate_data = PythonOperator(
+        task_id="validate_data",
+        python_callable=_validate_data,
+    )
+
+    create_weather_table = PythonOperator(
+        task_id="create_weather_table",
+        python_callable=_create_weather_table,
+    )
+
+    load_data_to_postgres = PythonOperator(
+        task_id="load_data_to_postgres",
+        python_callable=_load_data_to_postgres,
+    )
 
     validate_data = PythonOperator(
         task_id="validate_data",
