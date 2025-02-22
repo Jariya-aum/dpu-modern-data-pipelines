@@ -289,7 +289,6 @@ services:
   #     airflow-init:
   #       condition: service_completed_successfully
 
-
   db:
     image: postgres
     volumes:
@@ -298,6 +297,8 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
+    ports:
+      - 5432:5432
 
   adminer:
     image: adminer
