@@ -15,11 +15,7 @@ DAG_FOLDER = "/opt/airflow/dags"
 
 
 def _get_weather_data():
-<<<<<<< HEAD
     # assert 1 == 2
-=======
-    assert 1 == 2
->>>>>>> f0553bfd71cbabefb06694c36aa41b6dc1787866
 
     # API_KEY = os.environ.get("WEATHER_API_KEY")
     API_KEY = Variable.get("weather_api_key")
@@ -46,19 +42,6 @@ def _validate_data():
 
     assert data.get("main") is not None
 
-<<<<<<< HEAD
-
-
-def _validate_temperature_range():
-    with open(f"{DAG_FOLDER}/data.json", "r") as f:
-        data = json.load(f)
-
-    assert data.get("main").get("temp") >= 30 and data.get("main").get("temp") <= 45
-    
-
-
-=======
->>>>>>> f0553bfd71cbabefb06694c36aa41b6dc1787866
 def _create_weather_table():
     pg_hook = PostgresHook(
         postgres_conn_id="weather_postgres_conn",
@@ -70,7 +53,8 @@ def _create_weather_table():
     sql = """
         CREATE TABLE IF NOT EXISTS weathers (
             dt BIGINT NOT NULL,
-            temp FLOAT NOT NULL
+            temp FLOAT NOT NULL,
+            feels_like FLOAT
         )
     """
     cursor.execute(sql)
@@ -89,9 +73,10 @@ def _load_data_to_postgres():
         data = json.load(f)
 
     temp = data["main"]["temp"]
+    feels_like = data["main"]["feels_like"]
     dt = data["dt"]
     sql = f"""
-        INSERT INTO weathers (dt, temp) VALUES ({dt}, {temp})
+        INSERT INTO weathers (dt, temp, feels_like) VALUES ({dt}, {temp}, {feels_like})
     """
     cursor.execute(sql)
     connection.commit()
@@ -115,26 +100,11 @@ with DAG(
         task_id="get_weather_data",
         python_callable=_get_weather_data,
     )
-    validate_temperature_range = PythonOperator(
-        task_id="validate_temperature_range",
-        python_callable=_validate_temperature_range,
-    )
+    # validate_temperature_range = PythonOperator(
+    #     task_id="validate_temperature_range",
+    #     python_callable=_validate_temperature_range,
+    # )
 
-
-    validate_data = PythonOperator(
-        task_id="validate_data",
-        python_callable=_validate_data,
-    )
-
-    create_weather_table = PythonOperator(
-        task_id="create_weather_table",
-        python_callable=_create_weather_table,
-    )
-
-    load_data_to_postgres = PythonOperator(
-        task_id="load_data_to_postgres",
-        python_callable=_load_data_to_postgres,
-    )
 
     validate_data = PythonOperator(
         task_id="validate_data",
@@ -153,5 +123,5 @@ with DAG(
 
     end = EmptyOperator(task_id="end")
 
-    start >> get_weather_data >> [validate_temperature_range, validate_data] >> load_data_to_postgres >> end
+    start >> get_weather_data >> validate_data >> load_data_to_postgres >> end
     start >> create_weather_table >> load_data_to_postgres
