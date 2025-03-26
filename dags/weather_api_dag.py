@@ -1,6 +1,7 @@
 import json
+import os
 from datetime import timedelta
-
+from airflow.operators.email import EmailOperator
 from airflow import DAG
 from airflow.models import Variable
 from airflow.operators.empty import EmptyOperator
@@ -41,6 +42,13 @@ def _validate_data():
         data = json.load(f)
 
     assert data.get("main") is not None
+
+def _validate_temperature_range():
+    with open(f"{DAG_FOLDER}/data.json", "r") as f:
+        data = json.load(f)
+
+    assert data.get("main").get("temp") >= 30 
+    assert data.get("main").get("temp") <= 45
 
 def _create_weather_table():
     pg_hook = PostgresHook(
@@ -100,10 +108,10 @@ with DAG(
         task_id="get_weather_data",
         python_callable=_get_weather_data,
     )
-    # validate_temperature_range = PythonOperator(
-    #     task_id="validate_temperature_range",
-    #     python_callable=_validate_temperature_range,
-    # )
+    validate_temperature_range = PythonOperator(
+        task_id="validate_temperature_range",
+        python_callable=_validate_temperature_range,
+    )
 
 
     validate_data = PythonOperator(
@@ -121,7 +129,15 @@ with DAG(
         python_callable=_load_data_to_postgres,
     )
 
+
+    send_email = EmailOperator(
+        task_id="send_email",
+        to=["kan@odds.team"],
+        subject="Finished getting open weather data",
+        html_content="Done",
+    )
+
     end = EmptyOperator(task_id="end")
 
-    start >> get_weather_data >> validate_data >> load_data_to_postgres >> end
-    start >> create_weather_table >> load_data_to_postgres
+    start >> get_weather_data >> [validate_data, validate_temperature_range] >> load_data_to_postgres 
+    start >> create_weather_table >> load_data_to_postgres >> send_email >> end

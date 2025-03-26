@@ -12,7 +12,7 @@ import requests
 
 DAG_FOLDER = "/opt/airflow/dags"
 
-API_KEY = Variable.get("airvisual_api_key")
+API_KEY = "ca802658-e8b7-4810-91e5-a304faf0f38c"
 CITY = "Bangkok"
 STATE = "Bangkok"
 COUNTRY = "Thailand"
